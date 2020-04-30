@@ -23,6 +23,9 @@ router.get('/tasks', auth, async (req, res) => {
     if (req.query.completed) {
         match.completed = req.query.completed === 'true'
     }
+    if (req.query.tags) {
+        match.tags = { $in: req.query.tags.split(',') }
+    }
     if (req.query.sortBy) {
         const parts = req.query.sortBy.split('_')
         sort[parts[0]] = parts[1] === 'asc' ?  1 : -1
@@ -59,7 +62,7 @@ router.get('/tasks/:id', auth, async (req, res) => {
 
 router.patch('/tasks/:id', auth, async (req, res) => {
     const updates = Object.keys(req.body)
-    const allowedUpdates = ['description', 'completed']
+    const allowedUpdates = ['description', 'completed', 'tags']
     const isValid = updates.every( property => allowedUpdates.includes(property))
 
     if (!isValid) {
@@ -71,7 +74,9 @@ router.patch('/tasks/:id', auth, async (req, res) => {
         if (!task) {
             return res.status(404).send()
         }
-        updates.forEach( update => task[update] = req.body[update])
+        updates.forEach( update => {
+            task[update] = req.body[update]
+        })
         await task.save()
 
         res.send(task)
